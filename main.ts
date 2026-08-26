@@ -1,5 +1,24 @@
 /**
- * decomm avatar: deterministic faces from the decomm mark.
+ * Deterministic faces from the decomm mark: a rounded socket with two eyes,
+ * no plug. Same seed, same SVG, every time. No CDN, no account, no network
+ * after you copy the folder.
+ *
+ * {@linkcode handler} serves the playground and `/avatar/:seed`. For SVG only,
+ * import {@linkcode renderAvatar} from `@decomm/avatar/render`.
+ *
+ * @example Serve the playground
+ * ```ts
+ * import { handler } from "jsr:@decomm/avatar";
+ *
+ * Deno.serve({ port: 8000 }, handler);
+ * ```
+ *
+ * @example Write one face
+ * ```ts
+ * import { renderAvatar } from "jsr:@decomm/avatar/render";
+ *
+ * Deno.writeTextFile("sandbox.svg", renderAvatar("sandbox"));
+ * ```
  *
  * @module
  */
@@ -34,13 +53,30 @@ Flags:
   --help
 `;
 
+/** Flags parsed from `Deno.args` when this module is the program entry. */
 export type Args = {
+  /** Seed to render as SVG instead of serving the playground. */
   seed?: string;
+  /** Path to write that SVG. Omit to print to stdout. */
   out?: string;
+  /** Listen port for {@linkcode handler}. Defaults to `8000`. */
   port: number;
+  /** Print CLI help and exit. */
   help: boolean;
 };
 
+/**
+ * Parse CLI flags for the playground / SVG writer.
+ *
+ * @param args Typically `Deno.args`.
+ * @returns Normalized flags. Throws if `--port` is set and is not a positive integer.
+ *
+ * @example
+ * ```ts
+ * import { parseArgs } from "jsr:@decomm/avatar";
+ * parseArgs(["--seed", "sandbox", "--out", "sandbox.svg"]);
+ * ```
+ */
 export const parseArgs = (args: string[]): Args => {
   const parsed: Args = { port: 8000, help: false };
   for (let i = 0; i < args.length; i++) {
@@ -58,6 +94,13 @@ export const parseArgs = (args: string[]): Args => {
 
 export { DEFAULT_COUNT, MAX_COUNT };
 
+/**
+ * Clamp a query-string `count` to `[1, {@linkcode MAX_COUNT}]`.
+ *
+ * @param raw Value of `?count=`. Empty or non-integer values use `fallback`.
+ * @param fallback Used when `raw` is missing or not an integer. Defaults to
+ * {@linkcode DEFAULT_COUNT}.
+ */
 export const parseCount = (raw: string | null, fallback = DEFAULT_COUNT): number => {
   if (raw == null || raw === "") return fallback;
   const n = Number(raw);
@@ -65,6 +108,13 @@ export const parseCount = (raw: string | null, fallback = DEFAULT_COUNT): number
   return Math.min(MAX_COUNT, Math.max(1, n));
 };
 
+/**
+ * `count` fresh hex seeds from `crypto.getRandomValues`.
+ *
+ * Used by `GET /api` so each grid is a new set of faces.
+ *
+ * @param count How many seeds to mint (already clamped by {@linkcode parseCount}).
+ */
 export const comboSeeds = (count: number): string[] =>
   Array.from({ length: count }, () => {
     const n = crypto.getRandomValues(new Uint32Array(1))[0] ?? 0;
@@ -73,6 +123,14 @@ export const comboSeeds = (count: number): string[] =>
 
 const SEED_OK = /^[A-Za-z0-9._-]+$/;
 
+/**
+ * Split a `?seeds=` list into unique, filename-safe seeds.
+ *
+ * Drops empty parts and anything outside `[A-Za-z0-9._-]`. Stops at
+ * {@linkcode MAX_COUNT}.
+ *
+ * @param raw Comma-separated seeds, or `null` if the query param is missing.
+ */
 export const parseSeeds = (raw: string | null): string[] => {
   if (!raw) return [];
   const seeds: string[] = [];
@@ -102,6 +160,25 @@ const wantsJson = (req: Request, url: URL): boolean =>
   url.searchParams.get("format") === "json" ||
   (req.headers.get("accept") ?? "").includes("application/json");
 
+/**
+ * HTTP handler for the playground, SVG route, JSON grid, and zip download.
+ *
+ * | Path | Response |
+ * | --- | --- |
+ * | `GET /` | Playground HTML (`?seed=`, `?count=`) |
+ * | `GET /avatar/:seed` | SVG for that seed |
+ * | `GET /api?count=12` | HTML grid of that many random faces |
+ * | `GET /api?count=12&format=json` | `{ count, avatars: [{ seed, url }] }` |
+ * | `GET /api/zip?seeds=a,b` | Zip of those SVGs |
+ *
+ * Responses are `cache-control: no-store` so the grid does not stick.
+ *
+ * @example
+ * ```ts
+ * import { handler } from "jsr:@decomm/avatar";
+ * Deno.serve({ port: 8000 }, handler);
+ * ```
+ */
 export const handler = (req: Request): Response => {
   if (req.method !== "GET" && req.method !== "HEAD") {
     return new Response("Method Not Allowed", {

@@ -1,28 +1,64 @@
+/**
+ * Parametric SVG faces from a seed: socket body, two eyes, one ink square.
+ *
+ * The tile background never changes. Seed `decomm` always hits
+ * {@linkcode canonicalTraits}. Every other seed is a slight combination of
+ * palette, size, and eye geometry via a seeded RNG.
+ *
+ * @example
+ * ```ts
+ * import { renderAvatar } from "jsr:@decomm/avatar/render";
+ *
+ * const svg = renderAvatar("sandbox");
+ * ```
+ *
+ * @module
+ */
 import { hashString, Seeded } from "./rng.ts";
 
+/** Width and height of every avatar, in SVG user units. */
 export const SIZE = 128;
 
+/** Outline stroke vs solid fill for the socket body. */
 export type FaceStyle = "outline" | "filled";
 
+/** Named ink pair for the socket body and eyes. */
 export type Palette = {
+  /** Stable palette id (`mark`, `solid`, `warm`, …). */
   name: string;
+  /** Socket body color (stroke or fill, depending on {@linkcode FaceStyle}). */
   body: string;
+  /** Eye fill. Outline palettes match the body; filled palettes use the ink field. */
   eyes: string;
+  /** Whether the socket is stroked or filled. */
   style: FaceStyle;
 };
 
+/** Geometry and palette for one face. Same seed always yields the same traits. */
 export type Traits = {
+  /** Seed these traits were derived from. */
   seed: string;
+  /** Palette picked for this seed. */
   palette: Palette;
+  /** Socket width. */
   faceW: number;
+  /** Socket height. */
   faceH: number;
+  /** Socket corner radius. */
   faceRx: number;
+  /** Stroke width when {@linkcode FaceStyle} is `outline`. */
   strokeW: number;
+  /** Eye width. */
   eyeW: number;
+  /** Right-eye height (left eye is this times {@linkcode Traits.leftEyeScale}). */
   eyeH: number;
+  /** Gap between the two eyes. */
   eyeGap: number;
+  /** Offset of the eye pair from the top of the socket. */
   eyeTop: number;
+  /** Eye corner radius. */
   eyeRx: number;
+  /** Left-eye height as a fraction of {@linkcode Traits.eyeH}. */
   leftEyeScale: number;
 };
 
@@ -43,7 +79,14 @@ const PALETTES: readonly Palette[] = [
 
 const round = (n: number): number => Math.round(n * 10) / 10;
 
-/** Centered, plug-less version of the site mark. Seed `decomm` always hits this. */
+/**
+ * Centered, plug-less version of the site mark.
+ *
+ * Seed `decomm` always hits this. Pass another seed only to keep
+ * {@linkcode Traits.seed} in sync with the request.
+ *
+ * @param seed Stored on the returned traits. Geometry is fixed.
+ */
 export const canonicalTraits = (seed = "decomm"): Traits => ({
   seed,
   palette: PALETTES[0],
@@ -59,6 +102,15 @@ export const canonicalTraits = (seed = "decomm"): Traits => ({
   leftEyeScale: 1,
 });
 
+/**
+ * Map a seed to {@linkcode Traits}.
+ *
+ * A trailing `.svg` is stripped. `decomm` returns {@linkcode canonicalTraits};
+ * every other seed is a combination of the eight palettes and a tight range of
+ * sizes around the mark.
+ *
+ * @param seed Any string. Same input, same traits.
+ */
 export const traitsFromSeed = (seed: string): Traits => {
   const key = seed.endsWith(".svg") ? seed.slice(0, -4) : seed;
   if (key === "decomm") return canonicalTraits(seed);
@@ -83,6 +135,19 @@ export const traitsFromSeed = (seed: string): Traits => {
   };
 };
 
+/**
+ * Render one 128×128 SVG for `seed`.
+ *
+ * @param seed Face id. `decomm` is the site mark; anything else is a
+ * deterministic combination.
+ * @returns A complete SVG document string.
+ *
+ * @example
+ * ```ts
+ * import { renderAvatar } from "jsr:@decomm/avatar/render";
+ * renderAvatar("decomm");
+ * ```
+ */
 export const renderAvatar = (seed: string): string => {
   const t = traitsFromSeed(seed);
   const { palette } = t;
