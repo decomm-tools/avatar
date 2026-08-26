@@ -1,0 +1,46 @@
+{
+  "name": "@decomm/avatar",
+  "version": "1.0.0",
+  "license": "MIT",
+  "exports": {
+    ".": "./main.ts",
+    "./render": "./render.ts",
+    "./init": "./init.ts"
+  },
+  "publish": {
+    "include": [
+      "main.ts",
+      "render.ts",
+      "rng.ts",
+      "playground.ts",
+      "limits.ts",
+      "zip.ts",
+      "init.ts",
+      "avatar.sh",
+      "README.md",
+      "LICENSE",
+      "deno.json",
+      "jsr.json"
+    ]
+  },
+  "tasks": {
+    "dev": "deno run --allow-net --watch main.ts",
+    "start": "deno run --allow-net main.ts",
+    "svg": "deno run --allow-write main.ts",
+    "compile": "mkdir -p bin && deno compile --allow-net --allow-write --output bin/avatar main.ts",
+    "test": "deno test --allow-read --allow-write --allow-net",
+    "check": "deno check main.ts render.ts rng.ts playground.ts init.ts zip.ts limits.ts",
+    "fmt": "deno fmt",
+    "lint": "deno lint"
+  },
+  "imports": {
+    "@std/assert": "jsr:@std/assert@^1.0.19"
+  },
+  "compilerOptions": {
+    "strict": true
+  },
+  "fmt": {
+    "lineWidth": 100,
+    "indentWidth": 2
+  }
+}

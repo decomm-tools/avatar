@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img">
+  <title>decomm avatar</title>
+  <rect width="128" height="128" fill="#09090b" />
+  <rect
+    x="37.7"
+    y="32.8"
+    width="52.7"
+    height="62.4"
+    rx="8.6"
+    fill="none"
+    stroke="#e8a317"
+    stroke-width="7.9"
+    stroke-linejoin="round"
+  />
+  <rect x="52.9" y="49.5" width="8.9" height="15.8" rx="2" fill="#e8a317" />
+  <rect x="66.3" y="48.6" width="8.9" height="17.6" rx="2" fill="#e8a317" />
+</svg>

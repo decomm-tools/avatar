@@ -1,0 +1,26 @@
+{
+  "name": "@decomm/avatar",
+  "version": "1.0.0",
+  "license": "MIT",
+  "exports": {
+    ".": "./main.ts",
+    "./render": "./render.ts",
+    "./init": "./init.ts"
+  },
+  "publish": {
+    "include": [
+      "main.ts",
+      "render.ts",
+      "rng.ts",
+      "playground.ts",
+      "limits.ts",
+      "zip.ts",
+      "init.ts",
+      "avatar.sh",
+      "README.md",
+      "LICENSE",
+      "deno.json",
+      "jsr.json"
+    ]
+  }
+}
