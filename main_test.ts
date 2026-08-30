@@ -74,7 +74,10 @@ Deno.test("GET /api/zip without seeds is 400", async () => {
 Deno.test("parseSeeds drops junk and caps", () => {
   assertEquals(parseSeeds("sandbox,decomm"), ["sandbox", "decomm"]);
   assertEquals(parseSeeds("../x,ok"), ["ok"]);
-  assertEquals(parseSeeds(Array.from({ length: 60 }, (_, i) => `s${i}`).join(",")).length, 48);
+  assertEquals(
+    parseSeeds(Array.from({ length: 60 }, (_, i) => `s${i}`).join(",")).length,
+    48,
+  );
 });
 
 Deno.test("unknown paths 404", async () => {
@@ -91,4 +94,32 @@ Deno.test("parseArgs reads seed and out", () => {
   const args = parseArgs(["--seed", "sandbox", "--out", "sandbox.svg"]);
   assertEquals(args.seed, "sandbox");
   assertEquals(args.out, "sandbox.svg");
+});
+
+const avatarSh = async (
+  args: string[],
+): Promise<{ stdout: string; stderr: string }> => {
+  const proc = new Deno.Command("sh", {
+    args: [`${Deno.cwd()}/avatar.sh`, ...args],
+    cwd: Deno.cwd(),
+    stdout: "piped",
+    stderr: "piped",
+  });
+  const out = await proc.output();
+  const stdout = new TextDecoder().decode(out.stdout);
+  const stderr = new TextDecoder().decode(out.stderr);
+  if (!out.success) throw new Error(stderr || stdout);
+  return { stdout, stderr };
+};
+
+Deno.test("avatar.sh --seed writes the carry-in SVG", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "decomm-avatar-sh-" });
+  try {
+    const out = `${dir}/sandbox.svg`;
+    const { stderr } = await avatarSh(["--seed", "sandbox", "--out", out]);
+    assertStringIncludes(stderr, out);
+    assertEquals(await Deno.readTextFile(out), renderAvatar("sandbox"));
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
 });

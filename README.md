@@ -29,25 +29,30 @@ Sample faces live in `samples/`.
 
 ## Carry-in
 
+Init on a connected machine. Copy the folder. Run dark.
+
+### Init
+
 ```sh
 deno run -A jsr:@decomm/avatar/init ./avatar
 cd avatar
 deno task compile
-./avatar.sh
 ```
 
-Or from this repo, on a connected machine:
+Or from this repo: `deno task compile`. That leaves `bin/avatar`.
+
+### Copy
+
+Carry the whole `avatar/` folder onto the isolated box — USB, sneakernet,
+[ferry](https://github.com/decomm-tools/ferry). Include `bin/`.
+
+### Run dark
+
+No network. The box never needs to come back online.
 
 ```sh
-deno task compile
-```
-
-Copy this folder (including `bin/avatar`) onto the isolated box.
-
-```sh
-./avatar.sh
 ./avatar.sh --seed sandbox --out sandbox.svg
 ```
 
-`avatar.sh` uses the compiled binary if present, otherwise `deno run`. `--allow-net` is only for the
-local playground.
+`avatar.sh` uses the compiled binary if present, otherwise `deno run`. The isolated box does not
+need Deno if you compiled first. `--allow-net` is only for the local playground.
